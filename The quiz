@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kemiquiz – Kapitel 8 & 9</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22d3ee;
+      --ok: #22c55e;
+      --bad: #ef4444;
+      --border: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(180deg, var(--bg), #020617);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .quiz {
+      width: min(900px, 100%);
+      background: color-mix(in oklab, var(--card), black 8%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    }
+    h1 { margin: 0 0 8px; font-size: 1.6rem; }
+    .subtitle { color: var(--muted); margin-bottom: 20px; }
+    .meta { display:flex; gap:16px; flex-wrap:wrap; color: var(--muted); margin-bottom: 16px; }
+    .question { font-size: 1.2rem; margin: 14px 0; }
+    .options { display: grid; gap: 10px; }
+    button.option {
+      text-align: left;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+    button.option:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
+    button.option:disabled { cursor: default; opacity: .9; }
+    .correct { border-color: var(--ok) !important; }
+    .wrong { border-color: var(--bad) !important; }
+    .feedback {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      line-height: 1.45;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .controls { margin-top: 16px; display:flex; gap:10px; }
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn.next { background: var(--accent); color: #001018; }
+    .btn.reset { background: #374151; color: white; }
+  </style>
+</head>
+<body>
+  <main class="quiz">
+    <h1>Kemiquiz: Kapitel 8 & 9</h1>
+    <p class="subtitle">Flervalsfrågor (4 alternativ). Efter varje svar får du en förklaring.</p>
+    <div class="meta">
+      <span id="progress">Fråga 1 av 10</span>
+      <span id="score">Poäng: 0</span>
+    </div>
+
+    <section id="questionBox">
+      <p class="question" id="questionText"></p>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="controls">
+        <button class="btn next" id="nextBtn" disabled>Nästa fråga</button>
+        <button class="btn reset" id="resetBtn">Starta om</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const questions = [
+      {
+        q: "Vad betyder det att en reaktion är exoterm?",
+        options: [
+          "Den tar upp energi från omgivningen",
+          "Den avger energi till omgivningen",
+          "Den ändrar inte energi alls",
+          "Den kan bara ske i vatten"
+        ],
+        correct: 1,
+        explanation: "Exoterm betyder att energi avges till omgivningen, ofta som värme. Därför blir omgivningen ofta varmare och ΔH är negativt (ΔH < 0)."
+      },
+      {
+        q: "Vilken formel används för att räkna värmeenergi i en kalorimeter?",
+        options: ["ΔG = ΔH − TΔS", "n = m / M", "q = c · m · ΔT", "E = e°katod − e°anod"],
+        correct: 2,
+        explanation: "I kalorimetri används q = c · m · ΔT. Där q är värmeenergi, c specifik värmekapacitet, m massa och ΔT temperaturändring."
+      },
+      {
+        q: "Vad händer med oxidationstalet vid oxidation?",
+        options: ["Det minskar", "Det blir alltid 0", "Det ökar", "Det blir negativt"],
+        correct: 2,
+        explanation: "Oxidation innebär att ett ämne avger elektroner. När elektroner lämnar ämnet ökar oxidationstalet."
+      },
+      {
+        q: "Vilket påstående om en katalysator är korrekt?",
+        options: [
+          "Den förbrukas helt i reaktionen",
+          "Den höjer aktiveringsenergin",
+          "Den sänker aktiveringsenergin och förbrukas inte",
+          "Den ändrar alltid ΔH"
+        ],
+        correct: 2,
+        explanation: "En katalysator ger en alternativ reaktionsväg med lägre aktiveringsenergi. Den ökar hastigheten men förbrukas inte och ändrar inte ΔH."
+      },
+      {
+        q: "Vad innebär reduktion i en redoxreaktion?",
+        options: ["Elektroner avges", "Elektroner tas upp", "Protoner avges", "Syre avges alltid"],
+        correct: 1,
+        explanation: "Reduktion betyder att partikeln tar upp elektroner (RIG = Reduction Is Gain). Då minskar oxidationstalet."
+      },
+      {
+        q: "Vilken elektrod är katod i ett galvaniskt element?",
+        options: ["Den där oxidation sker", "Minuspolen där reduktion sker", "Pluspolen där reduktion sker", "Pluspolen där oxidation sker"],
+        correct: 2,
+        explanation: "I galvaniska element gäller: anod = oxidation (minuspol), katod = reduktion (pluspol). Minnesregel: AnOx, RedCat."
+      },
+      {
+        q: "Beräkna emk: e°(katod)= +0,34 V och e°(anod)= −0,76 V.",
+        options: ["−0,42 V", "+1,10 V", "+0,42 V", "−1,10 V"],
+        correct: 1,
+        explanation: "Formeln är E = e°katod − e°anod = 0,34 − (−0,76) = 1,10 V. Dubbelminus blir plus."
+      },
+      {
+        q: "Varför skyddar förzinkning järn mot rost?",
+        options: [
+          "Zink är ädlare än järn",
+          "Zink är oädlare och oxideras först",
+          "Zink stoppar all kontakt med syre för alltid",
+          "Zink gör järnet till en katod i elektrolys"
+        ],
+        correct: 1,
+        explanation: "Zink är oädlare än järn och fungerar som offeranod. Zinken oxideras hellre, vilket skyddar järnet från oxidation (rost)."
+      },
+      {
+        q: "Vilken reaktion är endoterm?",
+        options: [
+          "C + O₂ → CO₂ + energi",
+          "Cellandning",
+          "N₂ + O₂ + energi → 2NO",
+          "Neutralisation som avger värme"
+        ],
+        correct: 2,
+        explanation: "Endoterm reaktion tar upp energi. I uttrycket N₂ + O₂ + energi → 2NO syns energin på reaktantsidan, alltså ΔH > 0."
+      },
+      {
+        q: "Vad avgör om en reaktion är spontan enligt Gibbs fria energi?",
+        options: ["ΔH > 0", "ΔS < 0", "ΔG < 0", "E > 0"],
+        correct: 2,
+        explanation: "Spontanitet avgörs av ΔG. Om ΔG < 0 är reaktionen spontan. Sambandet ges av ΔG = ΔH − TΔS."
+      }
+    ];
+
+    let index = 0;
+    let score = 0;
+    let answered = false;
+
+    const questionText = document.getElementById('questionText');
+    const optionsEl = document.getElementById('options');
+    const feedback = document.getElementById('feedback');
+    const progress = document.getElementById('progress');
+    const scoreEl = document.getElementById('score');
+    const nextBtn = document.getElementById('nextBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function renderQuestion() {
+      answered = false;
+      nextBtn.disabled = true;
+      feedback.className = 'feedback';
+      feedback.textContent = '';
+
+      const current = questions[index];
+      progress.textContent = `Fråga ${index + 1} av ${questions.length}`;
+      scoreEl.textContent = `Poäng: ${score}`;
+      questionText.textContent = current.q;
+      optionsEl.innerHTML = '';
+
+      current.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.textContent = `${String.fromCharCode(65 + i)}. ${opt}`;
+        btn.addEventListener('click', () => selectAnswer(i, btn));
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function selectAnswer(choice, button) {
+      if (answered) return;
+      answered = true;
+
+      const current = questions[index];
+      const buttons = [...document.querySelectorAll('.option')];
+      buttons.forEach(b => b.disabled = true);
+
+      if (choice === current.correct) {
+        button.classList.add('correct');
+        score++;
+      } else {
+        button.classList.add('wrong');
+        buttons[current.correct].classList.add('correct');
+      }
+
+      scoreEl.textContent = `Poäng: ${score}`;
+      feedback.textContent = current.explanation;
+      feedback.classList.add('show');
+      nextBtn.disabled = false;
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (index < questions.length - 1) {
+        index++;
+        renderQuestion();
+      } else {
+        questionText.textContent = `Klart! Du fick ${score} av ${questions.length} rätt.`;
+        optionsEl.innerHTML = '';
+        feedback.textContent = 'Bra jobbat! Klicka på "Starta om" för att köra quizet igen.';
+        feedback.classList.add('show');
+        nextBtn.disabled = true;
+        progress.textContent = 'Quiz slutfört';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      index = 0;
+      score = 0;
+      renderQuestion();
+    });
+
+    renderQuestion();
+  </script>
+</body>
+</html>
